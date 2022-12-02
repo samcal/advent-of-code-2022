@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-18.5 script
+-- stack script --resolver lts-20.2
 
 import Data.Ord
 import Data.List
@@ -15,7 +15,7 @@ readInventories = readNestedInts . splitOnBlankLines
     readNestedInts = (fmap . fmap) read
 
 main = do
-  rawData <- readFile "inputs/sample01.txt"
+  rawData <- readFile "inputs/day01.txt"
   let inventories = readInventories rawData
   let sortedTotals = sortBy (comparing Down) (fmap sum inventories)
   print . head $ sortedTotals
