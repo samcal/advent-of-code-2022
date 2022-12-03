@@ -1,8 +1,11 @@
 #!/usr/bin/env stack
 -- stack script --resolver lts-20.2
 
-data Shape = Rock | Paper | Scissors deriving (Show, Eq)
-data Outcome = Win | Draw | Loss deriving (Show)
+import Data.Maybe
+import Data.List
+
+data Shape = Rock | Paper | Scissors deriving (Eq)
+data Outcome = Win | Draw | Loss deriving (Eq)
 type Round = (Shape, Shape)
 
 readShape :: Char -> Shape
@@ -23,17 +26,16 @@ readOutcome 'Y' = Draw
 readOutcome 'Z' = Win
 
 moveToGetOutcome :: Outcome -> Shape -> Shape
-moveToGetOutcome Win Rock = Paper
-moveToGetOutcome Win Paper = Scissors
-moveToGetOutcome Win Scissors = Rock
-moveToGetOutcome Draw shape = shape
-moveToGetOutcome Loss shape =
-  (moveToGetOutcome Win . moveToGetOutcome Win) shape
+moveToGetOutcome outcome yourMove =
+  fromJust $ find
+    (\move -> evalRound (yourMove, move) == outcome)
+    [Rock, Paper, Scissors]
 
 readRoundForReal :: String -> Round
 readRoundForReal (expectedMove : ' ' : outcome : []) =
   let yourMove = readShape expectedMove
-  in (yourMove, moveToGetOutcome (readOutcome outcome) yourMove)
+      myMove = moveToGetOutcome (readOutcome outcome) yourMove
+  in (yourMove, myMove)
 
 scoreShape :: Shape -> Int
 scoreShape Rock = 1
@@ -41,12 +43,12 @@ scoreShape Paper = 2
 scoreShape Scissors = 3
 
 evalRound :: Round -> Outcome
-evalRound (yourMove, myMove)
-  | yourMove == myMove = Draw
-  | yourMove == Rock && myMove == Paper = Win
-  | yourMove == Paper && myMove == Scissors = Win
-  | yourMove == Scissors && myMove == Rock = Win
-  | otherwise = Loss
+evalRound round = case round of
+  (Rock, Paper) -> Win
+  (Paper, Scissors) -> Win
+  (Scissors, Rock) -> Win
+  (yourMove, myMove) ->
+    if yourMove == myMove then Draw else Loss
 
 scoreOutcome :: Outcome -> Int
 scoreOutcome Win = 6
@@ -54,9 +56,8 @@ scoreOutcome Draw = 3
 scoreOutcome Loss = 0
 
 scoreRound :: Round -> Int
-scoreRound round =
-  let outcome = evalRound round
-  in scoreShape (snd round) + scoreOutcome outcome
+scoreRound round@(_yourMove, myMove) =
+  scoreShape myMove + scoreOutcome (evalRound round)
 
 main = do
   rawData <- readFile "inputs/day02.txt"
