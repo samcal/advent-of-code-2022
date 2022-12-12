@@ -19,7 +19,7 @@ readInitialState :: String -> StackState
 readInitialState =
   fmap concat .
   transpose .
-  fmap (readStateLine) .
+  fmap readStateLine .
   init .
   lines
 
@@ -30,29 +30,28 @@ readInstruction s =
   let [_, count, _, source, _, target] = words s
   in (read count, (read source) - 1, (read target) - 1)
 
-applyInstruction :: Instruction -> StackState -> StackState
-applyInstruction (count, source, target) state =
+data Mover = CrateMover9000 | CrateMover9001
+applyInstruction :: Mover -> StackState -> Instruction -> StackState
+applyInstruction mover state (count, source, target) =
   let sourceStack = state ^. (ix source)
       targetStack = state ^. (ix target)
       (cratesToMove, remainingStack) = splitAt count sourceStack
       stateAfterRemoving = set (ix source) remainingStack state
+      orderedCratesToMove = case mover of
+        CrateMover9000 -> reverse cratesToMove
+        CrateMover9001 -> cratesToMove
       stateAfterReplacing =
         set
         (ix target)
-        (reverse cratesToMove ++ targetStack)
+        (orderedCratesToMove ++ targetStack)
         stateAfterRemoving
   in stateAfterReplacing
 
-safeHead :: [a] -> Maybe a
-safeHead [] = Nothing
-safeHead (x:_) = Just x
-
 main = do
-  rawData <- readFile "inputs/sample05.txt"
+  rawData <- readFile "inputs/day05.txt"
   let [rawState, rawInstructions] = splitOn "\n\n" rawData
   let initialState = readInitialState rawState
   let instructions = fmap readInstruction $ lines rawInstructions
 
-  let endState = foldr applyInstruction initialState instructions
-
-  print . fmap (fromMaybe ' ' . safeHead) $ endState
+  print . fmap head $ foldl' (applyInstruction CrateMover9000) initialState instructions
+  print . fmap head $ foldl' (applyInstruction CrateMover9001) initialState instructions
