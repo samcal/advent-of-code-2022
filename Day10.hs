@@ -9,13 +9,13 @@ readInstruction s = case words s of
   ["noop"] -> Noop
   ["addx", n] -> AddX $ read n
 
-applyInstructions :: Register -> [Instruction] -> [Register]
-applyInstructions _ [] = []
-applyInstructions reg (i:is) = case i of
-  Noop -> reg : applyInstructions reg is
-  AddX n -> reg : reg : applyInstructions (reg + n) is
+applyInstructions :: [Instruction] -> Register -> [Register]
+applyInstructions [] _ = []
+applyInstructions (i:is) reg = case i of
+  Noop -> reg : applyInstructions is reg
+  AddX n -> reg : reg : applyInstructions is (reg + n)
 
-interestingValues :: [Int] -> [Int]
+interestingValues :: [Register] -> [Register]
 interestingValues as =
   fmap (\x -> (as !! (x-1)) * x) [20, 60, 100, 140, 180, 220]
 
@@ -33,6 +33,6 @@ renderCRT =
 main = do
   rawData <- readFile "inputs/day10.txt"
   let instructions = fmap readInstruction $ lines rawData
-  let cycleValues = applyInstructions 1 instructions
+  let cycleValues = applyInstructions instructions 1
   print . sum . interestingValues $ cycleValues
   putStrLn . renderCRT $ cycleValues
